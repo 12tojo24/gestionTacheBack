@@ -9,14 +9,15 @@ const {
   deleteTask,
   getStats,
 } = require("../controllers/taskController");
-const { validateTask, validateStatus } = require("../middlewares/validate");
+const { validateTask } = require("../middlewares/validate");
 
-router.get   ("/stats",          getStats);
-router.get   ("/",               getAllTasks);
-router.get   ("/:id",            getTaskById);
-router.post  ("/",               validateTask,   createTask);
-router.put   ("/:id",            validateTask,   updateTask);
-router.patch ("/:id/status",     validateStatus, updateTaskStatus);
-router.delete("/:id",            deleteTask);
+// ✅ validateStatus complètement retiré — le controller normalise lui-même
+router.get   ("/stats",      getStats);
+router.get   ("/",           getAllTasks);
+router.get   ("/:id",        getTaskById);
+router.post  ("/",           validateTask, createTask);
+router.put   ("/:id",        validateTask, updateTask);
+router.patch ("/:id/status", updateTaskStatus);   // ✅ plus de validateStatus
+router.delete("/:id",        deleteTask);
 
 module.exports = router;

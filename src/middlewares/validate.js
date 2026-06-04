@@ -1,38 +1,28 @@
-// src/middlewares/validate.js
+// src/middlewares/validate.js — version finale sans validateStatus
 const VALID = {
   category: ["Design","Dev","Marketing","RH","Finance","Autre"],
   priority: ["Urgent","Haute","Normale","Basse"],
-  status:   ["À faire","En cours","Terminé"],
 };
 
 const validateTask = (req, res, next) => {
-  const { title, category, priority, status } = req.body;
+  const { title, category, priority } = req.body;
 
   if (!title || title.trim() === "") {
-    return res.status(400).json({ success: false, message: "Le titre est obligatoire" });
+    return res.status(400).json({ success: false, message: "Titre obligatoire" });
   }
   if (title.length > 255) {
-    return res.status(400).json({ success: false, message: "Titre trop long (max 255 caractères)" });
+    return res.status(400).json({ success: false, message: "Titre trop long" });
   }
   if (category && !VALID.category.includes(category)) {
-    return res.status(400).json({ success: false, message: `Catégorie invalide. Valeurs : ${VALID.category.join(", ")}` });
+    return res.status(400).json({ success: false, message: "Catégorie invalide" });
   }
   if (priority && !VALID.priority.includes(priority)) {
-    return res.status(400).json({ success: false, message: `Priorité invalide. Valeurs : ${VALID.priority.join(", ")}` });
-  }
-  if (status && !VALID.status.includes(status)) {
-    return res.status(400).json({ success: false, message: `Statut invalide. Valeurs : ${VALID.status.join(", ")}` });
-  }
-
-  next();
-};
-
-const validateStatus = (req, res, next) => {
-  const { status } = req.body;
-  if (!status || !VALID.status.includes(status)) {
-    return res.status(400).json({ success: false, message: `Statut invalide. Valeurs : ${VALID.status.join(", ")}` });
+    return res.status(400).json({ success: false, message: "Priorité invalide" });
   }
   next();
 };
+
+// ✅ validateStatus exporté vide pour ne pas casser les imports existants
+const validateStatus = (req, res, next) => next();
 
 module.exports = { validateTask, validateStatus };
