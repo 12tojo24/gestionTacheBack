@@ -73,28 +73,27 @@ const createTask = async (req, res, next) => {
   }
 };
 
+// src/controllers/taskController.js — updateTask et updateTaskStatus
+// Ajouter updated_at = NOW() dans chaque UPDATE
+
 const updateTask = async (req, res, next) => {
   try {
     const { title, description, category, priority, due_date } = req.body;
     const status = normalizeStatus(req.body.status);
 
-    const [check] = await db.query(
-      "SELECT id FROM tasks WHERE id = ?",
-      [req.params.id]
-    );
+    const [check] = await db.query("SELECT id FROM tasks WHERE id = ?", [req.params.id]);
     if (check.length === 0) {
       return res.status(404).json({ success: false, message: "Tâche introuvable" });
     }
+
     await db.query(
       `UPDATE tasks
-       SET title=?, description=?, category=?, priority=?, status=?, due_date=?
+       SET title=?, description=?, category=?, priority=?, status=?, due_date=?, updated_at=NOW()
        WHERE id = ?`,
       [title, description || null, category, priority, status, due_date || null, req.params.id]
     );
-    const [rows] = await db.query(
-      "SELECT * FROM tasks WHERE id = ?",
-      [req.params.id]
-    );
+
+    const [rows] = await db.query("SELECT * FROM tasks WHERE id = ?", [req.params.id]);
     res.json({ success: true, data: rows[0] });
   } catch (err) {
     next(err);
@@ -104,23 +103,18 @@ const updateTask = async (req, res, next) => {
 const updateTaskStatus = async (req, res, next) => {
   try {
     const status = normalizeStatus(req.body.status);
-    // console.log("updateTaskStatus — id:", req.params.id, "| status:", status);
 
-    const [check] = await db.query(
-      "SELECT id FROM tasks WHERE id = ?",
-      [req.params.id]
-    );
+    const [check] = await db.query("SELECT id FROM tasks WHERE id = ?", [req.params.id]);
     if (check.length === 0) {
       return res.status(404).json({ success: false, message: "Tâche introuvable" });
     }
+
     await db.query(
-      "UPDATE tasks SET status = ? WHERE id = ?",
+      "UPDATE tasks SET status = ?, updated_at = NOW() WHERE id = ?",
       [status, req.params.id]
     );
-    const [rows] = await db.query(
-      "SELECT * FROM tasks WHERE id = ?",
-      [req.params.id]
-    );
+
+    const [rows] = await db.query("SELECT * FROM tasks WHERE id = ?", [req.params.id]);
     res.json({ success: true, data: rows[0] });
   } catch (err) {
     next(err);
