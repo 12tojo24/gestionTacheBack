@@ -1,5 +1,4 @@
-// src/app.js  — ajouter charset UTF-8 pour les accents (À faire, Terminé...)
-
+// src/app.js
 const express      = require("express");
 const cors         = require("cors");
 const taskRoutes   = require("./routes/taskRoutes");
@@ -7,13 +6,10 @@ const errorHandler = require("./middlewares/errorHandler");
 
 const app = express();
 
-app.use(cors({ origin: "http://localhost:5173", credentials: true }));
-
-// ✅ Forcer UTF-8 pour les caractères accentués dans les ENUM
-app.use((req, res, next) => {
-  res.setHeader("Content-Type", "application/json; charset=utf-8");
-  next();
-});
+app.use(cors({
+  origin: "*",   // ✅ temporairement tout autoriser
+  credentials: false,
+}));
 
 app.use(express.json({ limit: "10kb" }));
 app.use(express.urlencoded({ extended: true }));
