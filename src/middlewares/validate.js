@@ -1,4 +1,3 @@
-// src/middlewares/validate.js — version finale sans validateStatus
 const VALID = {
   category: ["Design","Dev","Marketing","RH","Finance","Autre"],
   priority: ["Urgent","Haute","Normale","Basse"],
@@ -6,7 +5,6 @@ const VALID = {
 
 const validateTask = (req, res, next) => {
   const { title, category, priority } = req.body;
-
   if (!title || title.trim() === "") {
     return res.status(400).json({ success: false, message: "Titre obligatoire" });
   }
@@ -22,7 +20,6 @@ const validateTask = (req, res, next) => {
   next();
 };
 
-// ✅ validateStatus exporté vide pour ne pas casser les imports existants
 const validateStatus = (req, res, next) => next();
 
 module.exports = { validateTask, validateStatus };

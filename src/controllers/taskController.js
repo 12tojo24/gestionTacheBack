@@ -1,20 +1,13 @@
-// src/controllers/taskController.js — fichier COMPLET
 const db = require("../config/db");
 
-// ✅ Déclarée EN HAUT avant toutes les fonctions
 const normalizeStatus = (s) => {
   if (!s) return "A faire";
   const map = {
-    "a faire":  "A faire",
-    "A faire":  "A faire",
-    "en cours": "En cours",
-    "En cours": "En cours",
-    "termine":  "Termine",
-    "Termine":  "Termine",
-    "à faire":  "A faire",
-    "À faire":  "A faire",
-    "terminé":  "Termine",
-    "Terminé":  "Termine",
+    "a faire":  "A faire", "A faire":  "A faire",
+    "en cours": "En cours","En cours": "En cours",
+    "termine":  "Termine", "Termine":  "Termine",
+    "à faire":  "A faire", "À faire":  "A faire",
+    "terminé":  "Termine", "Terminé":  "Termine",
   };
   return map[s] || map[s.toLowerCase()] || "A faire";
 };
@@ -22,8 +15,8 @@ const normalizeStatus = (s) => {
 const getAllTasks = async (req, res, next) => {
   try {
     const { status, priority, category, search } = req.query;
-    let sql = "SELECT * FROM tasks WHERE 1=1";
-    const params = [];
+    let sql = "SELECT * FROM tasks WHERE user_id = ?";
+    const params = [req.user.id];
 
     if (status)   { sql += " AND status = ?";   params.push(normalizeStatus(status)); }
     if (priority) { sql += " AND priority = ?"; params.push(priority); }
@@ -33,24 +26,20 @@ const getAllTasks = async (req, res, next) => {
     sql += " ORDER BY created_at DESC";
     const [rows] = await db.query(sql, params);
     res.json({ success: true, data: rows });
-  } catch (err) {
-    next(err);
-  }
+  } catch (err) { next(err); }
 };
 
 const getTaskById = async (req, res, next) => {
   try {
     const [rows] = await db.query(
-      "SELECT * FROM tasks WHERE id = ?",
-      [req.params.id]
+      "SELECT * FROM tasks WHERE id = ? AND user_id = ?",
+      [req.params.id, req.user.id]
     );
     if (rows.length === 0) {
       return res.status(404).json({ success: false, message: "Tâche introuvable" });
     }
     res.json({ success: true, data: rows[0] });
-  } catch (err) {
-    next(err);
-  }
+  } catch (err) { next(err); }
 };
 
 const createTask = async (req, res, next) => {
@@ -59,82 +48,75 @@ const createTask = async (req, res, next) => {
     const status = normalizeStatus(req.body.status);
 
     const [result] = await db.query(
-      `INSERT INTO tasks (title, description, category, priority, status, due_date)
-       VALUES (?, ?, ?, ?, ?, ?)`,
-      [title, description || null, category, priority, status, due_date || null]
+      `INSERT INTO tasks (title, description, category, priority, status, due_date, user_id)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      [title, description || null, category, priority, status, due_date || null, req.user.id]
     );
     const [rows] = await db.query(
-      "SELECT * FROM tasks WHERE id = ?",
-      [result.insertId]
+      "SELECT * FROM tasks WHERE id = ?", [result.insertId]
     );
     res.status(201).json({ success: true, data: rows[0] });
-  } catch (err) {
-    next(err);
-  }
+  } catch (err) { next(err); }
 };
-
-// src/controllers/taskController.js — updateTask et updateTaskStatus
-// Ajouter updated_at = NOW() dans chaque UPDATE
 
 const updateTask = async (req, res, next) => {
   try {
     const { title, description, category, priority, due_date } = req.body;
     const status = normalizeStatus(req.body.status);
 
-    const [check] = await db.query("SELECT id FROM tasks WHERE id = ?", [req.params.id]);
+    const [check] = await db.query(
+      "SELECT id FROM tasks WHERE id = ? AND user_id = ?",
+      [req.params.id, req.user.id]
+    );
     if (check.length === 0) {
       return res.status(404).json({ success: false, message: "Tâche introuvable" });
     }
-
     await db.query(
-      `UPDATE tasks
-       SET title=?, description=?, category=?, priority=?, status=?, due_date=?, updated_at=NOW()
-       WHERE id = ?`,
+      `UPDATE tasks SET title=?, description=?, category=?, priority=?,
+       status=?, due_date=?, updated_at=NOW() WHERE id=?`,
       [title, description || null, category, priority, status, due_date || null, req.params.id]
     );
-
-    const [rows] = await db.query("SELECT * FROM tasks WHERE id = ?", [req.params.id]);
+    const [rows] = await db.query(
+      "SELECT * FROM tasks WHERE id = ?", [req.params.id]
+    );
     res.json({ success: true, data: rows[0] });
-  } catch (err) {
-    next(err);
-  }
+  } catch (err) { next(err); }
 };
 
 const updateTaskStatus = async (req, res, next) => {
   try {
     const status = normalizeStatus(req.body.status);
 
-    const [check] = await db.query("SELECT id FROM tasks WHERE id = ?", [req.params.id]);
+    const [check] = await db.query(
+      "SELECT id FROM tasks WHERE id = ? AND user_id = ?",
+      [req.params.id, req.user.id]
+    );
     if (check.length === 0) {
       return res.status(404).json({ success: false, message: "Tâche introuvable" });
     }
-
     await db.query(
-      "UPDATE tasks SET status = ?, updated_at = NOW() WHERE id = ?",
+      "UPDATE tasks SET status=?, updated_at=NOW() WHERE id=?",
       [status, req.params.id]
     );
-
-    const [rows] = await db.query("SELECT * FROM tasks WHERE id = ?", [req.params.id]);
+    const [rows] = await db.query(
+      "SELECT * FROM tasks WHERE id = ?", [req.params.id]
+    );
     res.json({ success: true, data: rows[0] });
-  } catch (err) {
-    next(err);
-  }
+  } catch (err) { next(err); }
 };
 
 const deleteTask = async (req, res, next) => {
   try {
     const [check] = await db.query(
-      "SELECT id FROM tasks WHERE id = ?",
-      [req.params.id]
+      "SELECT id FROM tasks WHERE id = ? AND user_id = ?",
+      [req.params.id, req.user.id]
     );
     if (check.length === 0) {
       return res.status(404).json({ success: false, message: "Tâche introuvable" });
     }
-    await db.query("DELETE FROM tasks WHERE id = ?", [req.params.id]);
+    await db.query("DELETE FROM tasks WHERE id=?", [req.params.id]);
     res.json({ success: true, message: "Tâche supprimée" });
-  } catch (err) {
-    next(err);
-  }
+  } catch (err) { next(err); }
 };
 
 const getStats = async (req, res, next) => {
@@ -147,8 +129,9 @@ const getStats = async (req, res, next) => {
         SUM(status = 'A faire')                            AS todo,
         SUM(priority = 'Urgent' AND status != 'Termine')   AS urgent,
         SUM(due_date < CURDATE() AND status != 'Termine')  AS overdue
-      FROM tasks
-    `);
+      FROM tasks WHERE user_id = ?
+    `, [req.user.id]);
+
     res.json({
       success: true,
       data: {
@@ -160,17 +143,10 @@ const getStats = async (req, res, next) => {
         overdue:     Number(totals.overdue     || 0),
       },
     });
-  } catch (err) {
-    next(err);
-  }
+  } catch (err) { next(err); }
 };
 
 module.exports = {
-  getAllTasks,
-  getTaskById,
-  createTask,
-  updateTask,
-  updateTaskStatus,
-  deleteTask,
-  getStats,
+  getAllTasks, getTaskById, createTask,
+  updateTask, updateTaskStatus, deleteTask, getStats,
 };
